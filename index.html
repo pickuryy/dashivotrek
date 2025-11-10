@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Looker Studio - Auto Rotate Pages</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+        iframe {
+            width: 100%;
+            height: 100vh;
+            border: none;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            border: 1px solid #333;
+        }
+        #progress {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        #progress-bar {
+            height: 100%;
+            background: #4285f4;
+            width: 0%;
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+<body>
+    <!-- Ganti REPORT_ID, PAGE_ID_1, PAGE_ID_2, PAGE_ID_3 dengan ID Anda -->
+    <iframe 
+        id="dashboardFrame"
+        frameborder="0">
+    </iframe>
+    
+    <div id="status">Memuat...</div>
+    <div id="progress"><div id="progress-bar"></div></div>
+
+    <script>
+        // ========== KONFIGURASI ==========
+        const CONFIG = {
+            reportId: "90109ac0-b237-4ac3-a766-7a0b6c59be96",  // Ganti dengan Report ID Anda
+            pages: [
+                "p_7xk81r9kud",        // Ganti dengan Page 1 ID
+                "7PORF",        // Ganti dengan Page 2 ID  
+                "p_7eig4ozkud"         // Ganti dengan Page 3 ID
+            ],
+            interval: 300000,            // 5 menit (dalam milidetik)
+            baseUrl: "https://lookerstudio.google.com/embed/reporting"
+        };
+
+        // ========== VARIABEL STATE ==========
+        let currentPageIndex = 0;
+        let refreshTimer;
+        let progressInterval;
+        let startTime;
+
+        // ========== FUNGSI UTAMA ==========
+        function initializeDashboard() {
+            console.log("Memulai dashboard rotasi halaman...");
+            loadCurrentPage();
+            startAutoRotation();
+            setupEventListeners();
+        }
+
+        function loadCurrentPage() {
+            const currentPageId = CONFIG.pages[currentPageIndex];
+            const iframeUrl = `${CONFIG.baseUrl}/${CONFIG.reportId}/page/${currentPageId}`;
+            
+            document.getElementById('dashboardFrame').src = iframeUrl;
+            updateStatus(`Halaman ${currentPageIndex + 1}/${CONFIG.pages.length}`);
+            
+            // Reset progress bar
+            resetProgressBar();
+            startProgressBar();
+            
+            console.log(`Memuat halaman: ${currentPageId} (${currentPageIndex + 1}/${CONFIG.pages.length})`);
+        }
+
+        function rotateToNextPage() {
+            // Pindah ke halaman berikutnya
+            currentPageIndex = (currentPageIndex + 1) % CONFIG.pages.length;
+            console.log(`Berpindah ke halaman: ${currentPageIndex + 1}`);
+            
+            loadCurrentPage();
+        }
+
+        // ========== MANAJEMEN WAKTU ==========
+        function startAutoRotation() {
+            // Hentikan timer sebelumnya jika ada
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+            
+            // Mulai timer untuk rotasi
+            refreshTimer = setInterval(rotateToNextPage, CONFIG.interval);
+            console.log(`Auto rotation dimulai - interval: ${CONFIG.interval/1000} detik`);
+        }
+
+        function startProgressBar() {
+            startTime = Date.now();
+            const updateProgress = () => {
+                const elapsed = Date.now() - startTime;
+                const progress = (elapsed / CONFIG.interval) * 100;
+                document.getElementById('progress-bar').style.width = Math.min(progress, 100) + '%';
+            };
+            
+            progressInterval = setInterval(updateProgress, 1000);
+        }
+
+        function resetProgressBar() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            document.getElementById('progress-bar').style.width = '0%';
+        }
+
+        // ========== UI & STATUS ==========
+        function updateStatus(message) {
+            const statusEl = document.getElementById('status');
+            const timestamp = new Date().toLocaleTimeString();
+            statusEl.textContent = `${timestamp} - ${message}`;
+        }
+
+        // ========== EVENT HANDLERS ==========
+        function setupEventListeners() {
+            // Handle visibility change - pause/resume saat tab tidak aktif
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    // Tab tidak terlihat - pause
+                    clearInterval(refreshTimer);
+                    clearInterval(progressInterval);
+                    updateStatus("Dijeda (tab tidak aktif)");
+                } else {
+                    // Tab terlihat - resume
+                    startAutoRotation();
+                    resetProgressBar();
+                    startProgressBar();
+                    updateStatus("Dilanjutkan");
+                }
+            });
+
+            // Handle iframe load completion
+            document.getElementById('dashboardFrame').addEventListener('load', function() {
+                updateStatus(`Halaman ${currentPageIndex + 1} dimuat`);
+            });
+
+            // Handle errors
+            window.addEventListener('error', function(e) {
+                console.error('Error:', e.error);
+                updateStatus("Error - memuat ulang...");
+                setTimeout(loadCurrentPage, 5000);
+            });
+        }
+
+        // ========== MANUAL CONTROL (untuk debugging) ==========
+        // Fungsi untuk manual control - bisa dihapus jika tidak diperlukan
+        function nextPage() {
+            rotateToNextPage();
+        }
+
+        function previousPage() {
+            currentPageIndex = (currentPageIndex - 1 + CONFIG.pages.length) % CONFIG.pages.length;
+            loadCurrentPage();
+        }
+
+        function goToPage(index) {
+            if (index >= 0 && index < CONFIG.pages.length) {
+                currentPageIndex = index;
+                loadCurrentPage();
+            }
+        }
+
+        // Ekspos fungsi ke global scope untuk debugging
+        window.dashboardControls = {
+            nextPage,
+            previousPage,
+            goToPage,
+            getCurrentPage: () => currentPageIndex + 1
+        };
+
+        // ========== INISIALISASI ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Dashboard initialized dengan konfigurasi:", CONFIG);
+            initializeDashboard();
+        });
+
+    </script>
+</body>
+</html>
