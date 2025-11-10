@@ -89,7 +89,7 @@
             const iframeUrl = `${CONFIG.baseUrl}/${CONFIG.reportId}/page/${currentPageId}`;
             
             document.getElementById('dashboardFrame').src = iframeUrl;
-            updateStatus(`Halaman ${currentPageIndex + 1}/${CONFIG.pages.length}`);
+            updateStatus(`Page ${currentPageIndex + 1}/${CONFIG.pages.length}`);
             
             // Reset progress bar
             resetProgressBar();
@@ -143,36 +143,36 @@
             statusEl.textContent = `${timestamp} - ${message}`;
         }
 
-        // ========== EVENT HANDLERS ==========
-        function setupEventListeners() {
-            // Handle visibility change - pause/resume saat tab tidak aktif
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) {
-                    // Tab tidak terlihat - pause
-                    clearInterval(refreshTimer);
-                    clearInterval(progressInterval);
-                    updateStatus("Dijeda (tab tidak aktif)");
-                } else {
-                    // Tab terlihat - resume
-                    startAutoRotation();
-                    resetProgressBar();
-                    startProgressBar();
-                    updateStatus("Dilanjutkan");
-                }
-            });
+        // // ========== EVENT HANDLERS ==========
+        // function setupEventListeners() {
+        //     // Handle visibility change - pause/resume saat tab tidak aktif
+        //     document.addEventListener('visibilitychange', function() {
+        //         if (document.hidden) {
+        //             // Tab tidak terlihat - pause
+        //             clearInterval(refreshTimer);
+        //             clearInterval(progressInterval);
+        //             updateStatus("Dijeda (tab tidak aktif)");
+        //         } else {
+        //             // Tab terlihat - resume
+        //             startAutoRotation();
+        //             resetProgressBar();
+        //             startProgressBar();
+        //             updateStatus("Dilanjutkan");
+        //         }
+        //     });
 
-            // Handle iframe load completion
-            document.getElementById('dashboardFrame').addEventListener('load', function() {
-                updateStatus(`Halaman ${currentPageIndex + 1} dimuat`);
-            });
+        //     // Handle iframe load completion
+        //     document.getElementById('dashboardFrame').addEventListener('load', function() {
+        //         updateStatus(`Halaman ${currentPageIndex + 1} dimuat`);
+        //     });
 
-            // Handle errors
-            window.addEventListener('error', function(e) {
-                console.error('Error:', e.error);
-                updateStatus("Error - memuat ulang...");
-                setTimeout(loadCurrentPage, 5000);
-            });
-        }
+        //     // Handle errors
+        //     window.addEventListener('error', function(e) {
+        //         console.error('Error:', e.error);
+        //         updateStatus("Error - memuat ulang...");
+        //         setTimeout(loadCurrentPage, 5000);
+        //     });
+        // }
 
         // ========== MANUAL CONTROL (untuk debugging) ==========
         // Fungsi untuk manual control - bisa dihapus jika tidak diperlukan
@@ -208,4 +208,5 @@
 
     </script>
 </body>
+
 </html>
